@@ -1,0 +1,57 @@
+Minimum requirements:
+- local multi-player (1-x players)
+-- players join game by pressing a key
+-- that key becomes their buzzer
+- players have unique colors and names
+
+- start quiz
+- question shows
+- players have to wait x seconds before they can buzz
+- possible answers show after players can buzz
+- buzzed player has x seconds to answer
+-- no answer or wrong answer causes other players to gain a point
+- buzzed player selects the answer by
+-- tapping the buzzer to change answer
+-- holding the buzzer to lock in the answer
+
+- quiz ends after x questions
+- reset the game (quiz and players are cleared)
+
+
+
+
+Extra requirements:
+- player set custom name
+- restart the quiz with the same players
+- select quiz theme
+- select quiz length
+- fancy UI with animations and transitions
+- sounds
+
+
+
+
+Initial plan: 
+
+- game object
+-- manages quiz objects
+--- create quiz, next question, end quiz
+--- create quiz with options (theme, length...)
+
+- quiz object
+-- an array of question objects
+-- an array of players
+
+- question object
+-- the question itself
+-- correct answer
+-- array of wrong answers
+
+- player object
+-- name
+-- score
+-- color
+-- buzzer key
+
+- displayController object
+-- interface between user and data
