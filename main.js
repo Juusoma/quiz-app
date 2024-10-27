@@ -100,6 +100,32 @@ const questions = [
     }
 ]
 
+const time = (function(){
+    let timeouts = [];
+    let intervals = [];
+
+    function createTimeout(func, delay){
+        const timeo = setTimeout(func, delay);
+        timeouts.push(timeo);
+        return timeo;
+    }
+
+    function createInterval(func, delay){
+        const inter = setInterval(func, delay)
+        intervals.push(inter);
+        return inter;
+    }
+
+    function clearTimeoutsAndIntervals(){
+        timeouts.forEach(x => clearTimeout(x));
+        intervals.forEach(x => clearInterval(x));
+        timeouts = [];
+        intervals = [];
+    }
+
+    return {createTimeout, createInterval, clearTimeoutsAndIntervals}
+}());
+
 const game = (function() {
     const maxPlayers = 4;
     const questionDisplayTime = 5;
@@ -109,22 +135,38 @@ const game = (function() {
     const playerHues = [220, 120, 60, 280];
     let players = [];
     let buzzedPlayer = null;
+    let winnerPlayer = null;
     let awaitingBuzzer = false;
     let correctAnswerIndex = 0;
 
     const onPlayersChanged = new CustomEvent("onplayerschanged");
     const onQuestionChanged = new CustomEvent("onquestionchanged");
     const onAnswersAvailable = new CustomEvent("onanswersavailable");
+    const onPhaseChanged = new CustomEvent("onphasechanged");
 
     const getPlayers = () => players;
     const getBuzzedPlayer = () => buzzedPlayer;
+    const getWinnerPlayer = () => winnerPlayer;
     const isInLobby = () => currentPhase == 0;
     const getQuiz = () => currentQuiz;
+    const getPhase = () => currentPhase;
 
-    function resetGame(){
-        currentPhase = 0;
+    function setPhase(newPhase){
+        currentPhase = newPhase;
+        document.dispatchEvent(onPhaseChanged);
+    }
+
+    function resetPlayers(){
         players = [];
         document.dispatchEvent(onPlayersChanged);
+    }
+
+    function resetQuiz(){
+        buzzedPlayer = null;
+        winnerPlayer = null;
+        awaitingBuzzer = false;
+        setPhase(0);
+        time.clearTimeoutsAndIntervals();
     }
 
     function resetPlayerScores(){
@@ -150,6 +192,8 @@ const game = (function() {
     }
 
     function initializeNewQuiz(questionCount){
+        time.clearTimeoutsAndIntervals();
+        resetQuiz();
         currentQuiz = createQuiz(questionCount);
         console.log(`Quiz started with ${currentQuiz.questions.length} questions and ${players.length} players: `,
             ...players.map(x => x.name)
@@ -162,9 +206,9 @@ const game = (function() {
             return;
         }
 
-        currentPhase = 1;
         resetPlayerScores();
         initializeNewQuiz(3);
+        setPhase(1);
         displayCurrentQuestion();
     }
 
@@ -173,12 +217,13 @@ const game = (function() {
         if(currentQuiz.getCurrentQuestion()){
             displayCurrentQuestion();
         }else{
-            const winnerPlayer = players.reduce((prev, cur) => {
+            winnerPlayer = players.reduce((prev, cur) => {
                 return (prev.getScore() < cur.getScore()) ? cur : prev;
             }, players[0]);
             console.log("The quiz has ended!", 
                 "\n", `Player ${winnerPlayer.name} won with score of ${winnerPlayer.getScore()}!`
             );
+            setPhase(2);
         }
     }
 
@@ -189,7 +234,7 @@ const game = (function() {
         buzzedPlayer = null;
         console.log("buzzed player set to null")
         document.dispatchEvent(onQuestionChanged);
-        setTimeout(() => {
+        time.createTimeout(() => {
             let possibleAnswers = [currentQuestion.correctAnswer, ...currentQuestion.wrongAnswers];
             possibleAnswers.sort(() => Math.random() * 2 - 1);
             const displayAnswers = possibleAnswers.map((x, i) => ((i+1)+ ". " + x));
@@ -199,18 +244,6 @@ const game = (function() {
             document.dispatchEvent(onAnswersAvailable);
         }, questionDisplayTime * 1000);
     }
-
-    /*function evaluateKey(key){
-        
-        /*const playerWithKey = players.find(x => x.name == key);
-
-        if(playerWithKey){
-            playerWithKey.pressBuzzer();
-        }else if(currentPhase == 0)
-        {
-            addNewPlayer(key);
-        }
-    }*/
 
     function getPlayerByName(name){
         return players.find(x => x.name == name);
@@ -258,13 +291,13 @@ const game = (function() {
             }
         }
 
-        setTimeout(gotoNextQuestion, 3000);
+        time.createTimeout(gotoNextQuestion, 3000);
 
         return wasCorrect;
     }
 
-    return {addNewPlayer, initializeNewQuiz, startGame, resetGame, gotoNextQuestion, displayCurrentQuestion,
-        invokeBuzzer, getPlayerByName, getPlayers, isInLobby, getQuiz, questionDisplayTime, getBuzzedPlayer, provideAnswer
+    return {addNewPlayer, initializeNewQuiz, startGame, resetQuiz, resetPlayers, gotoNextQuestion, displayCurrentQuestion,
+        invokeBuzzer, getPlayerByName, getPlayers, isInLobby, getQuiz, questionDisplayTime, getBuzzedPlayer, getWinnerPlayer, provideAnswer, getPhase
     };
 }())
 
@@ -401,10 +434,21 @@ const displayController = (function(){
     
     document.addEventListener("onquestionchanged", displayCurrentQuestion);
     document.addEventListener("onanswersavailable", displayCurrentAnswers);
+    document.addEventListener("onphasechanged", handleGamePhaseChange);
 
     function startGame(){
         game.startGame();
     } 
+
+    function resetGame(){
+        game.resetPlayers();
+        game.resetQuiz();
+        hideQuiz();
+    } 
+
+    function hideQuiz(){
+        quizContainer.style.display = "none";
+    }
 
     function displayCurrentQuestion(){
         clearBuzzers();
@@ -417,7 +461,7 @@ const displayController = (function(){
         let timeoutLength = game.questionDisplayTime;
         quizCountdown.textContent = timeoutLength;
 
-        const inter = setInterval(() => {
+        const inter = time.createInterval(() => {
             timeoutLength--;
             quizCountdown.textContent = timeoutLength;
             if(timeoutLength <= 0){
@@ -471,7 +515,7 @@ const displayController = (function(){
         quizCountdown.style.display = "block";
         quizCountdown.textContent = timeoutLength;
 
-        const inter = setInterval(() => {
+        const inter = time.createInterval(() => {
             timeoutLength--;
             quizCountdown.textContent = timeoutLength;
             if(timeoutLength <= 0){
@@ -495,7 +539,32 @@ const displayController = (function(){
         }
     }
 
-    return {evaluateKeyDown, evaluateKeyUp, startGame};
+    function displayQuizWinner(){
+        quizCountdown.style.display = "none";
+        quizAnswerContainer.style.display = "none";
+
+        const winner = game.getWinnerPlayer()
+        if(winner){
+            quizQuestion.textContent = `Player ${winner.name} won with a score of ${winner.getScore()}`;
+        }else{
+            hideQuiz();
+        }
+    }
+
+    function handleGamePhaseChange(){
+        switch(game.getPhase()){
+            case 0:
+                hideQuiz();
+                break;
+            case 1:
+                break;
+            case 2:
+                displayQuizWinner();
+                break;
+        }
+    }
+
+    return {evaluateKeyDown, evaluateKeyUp, startGame, resetGame};
 }());
 
 document.addEventListener("keydown", e => {
@@ -514,7 +583,7 @@ document.addEventListener("keyup", e => {
 
 const resetGameButton = document.querySelector(".reset-game");
 resetGameButton.addEventListener("click", e => {
-    game.resetGame();
+    displayController.resetGame();
 });
 
 const startGameButton = document.querySelector(".start-game");
