@@ -216,7 +216,7 @@ const game = (function() {
         return players.find(x => x.name == name);
     }
 
-    function invokeBuzzer(player){
+    function invokeBuzzer(buzzer, player){
         if(currentPhase != 1){
             console.log("Game not yet started!");
             return;
@@ -229,7 +229,7 @@ const game = (function() {
             buzzedPlayer = player;
             const onPlayerTurn = new CustomEvent("onplayerturn", {"detail": {player}});
             console.log(player.name, "Buzzed!")
-            document.dispatchEvent(onPlayerTurn);
+            buzzer.dispatchEvent(onPlayerTurn);
             awaitingBuzzer = false;
             console.log(buzzedPlayer.name);
             
@@ -344,6 +344,7 @@ const displayController = (function(){
         playerContainer.appendChild(newPlayerElement);
         playerBuzzerElements.push(newPlayerElement);
         newPlayerElement.addEventListener("click", playerBuzzerClick);
+        newPlayerElement.addEventListener("onplayerturn", displayPlayerTurn);
     }
 
     function addPlayerFan(){
@@ -386,7 +387,7 @@ const displayController = (function(){
                 setAnswerFocus(currentFocusIndex + 1);
             }
             else{
-                game.invokeBuzzer(player);
+                game.invokeBuzzer(buzzer, player);
             }
         }
     }
@@ -400,13 +401,13 @@ const displayController = (function(){
     
     document.addEventListener("onquestionchanged", displayCurrentQuestion);
     document.addEventListener("onanswersavailable", displayCurrentAnswers);
-    document.addEventListener("onplayerturn", displayPlayerTurn);
 
     function startGame(){
         game.startGame();
     } 
 
     function displayCurrentQuestion(){
+        clearBuzzers();
         const currentQuestion = game.getQuiz().getCurrentQuestion();
         quizQuestion.textContent = currentQuestion.question;
         quizContainer.style.display = "flex";
@@ -424,6 +425,10 @@ const displayController = (function(){
                 clearInterval(inter);
             }
         }, 1000);
+    }
+
+    function clearBuzzers(){
+        playerBuzzerElements.forEach(x => x.classList.remove("turn"));
     }
 
     function displayCurrentAnswers(){
@@ -448,6 +453,7 @@ const displayController = (function(){
         quizContainer.style.setProperty("--hue", e.detail.player.hue + "deg");
         quizContainer.style.setProperty("--saturation", "50%");
         currentFocusIndex = 0;
+        e.target.classList.add("turn");
         setAnswerFocus(0);
         startAnswerTimer();
     }
