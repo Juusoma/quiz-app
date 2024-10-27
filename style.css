@@ -83,14 +83,15 @@ button:hover{
 
 .quiz-container{
     display: none;
-    grid-template-rows: 2fr 4fr;
-    --hue: 220deg;
-    --saturation: 70%;
+    flex-direction: column;
+    --hue: 0deg;
+    --saturation: 0%;
     --lightness: 50%;
     background: linear-gradient(0deg, hsl(var(--hue), var(--saturation), calc(var(--lightness) - 10%)), hsl(var(--hue), var(--saturation), var(--lightness)));
     color: white;
     width: 25vw;
     margin: auto;
+    gap: 16px;
     top: 0;
     padding: 32px;
     border-bottom-right-radius: 32px;
@@ -105,14 +106,24 @@ button:hover{
     font-size: 1.4rem;
 }
 
+.quiz-countdown{
+    text-align: center;
+    font-size: 3rem;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.693);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.312);
+}
+
 .quiz-answer-container{
     display: grid;
     gap: 8px;
+    text-align: center;
 }
 
 .quiz-answer{
     font-size: 1.2rem;
     width: 100%;
+    padding: 8px;
     background: linear-gradient(90deg, 
                                 hsl(var(--hue), var(--saturation), calc(var(--lightness) + 0%)), 
                                 hsl(var(--hue), var(--saturation), calc(var(--lightness) + 7%)),
@@ -124,8 +135,34 @@ button:hover{
                 2px 2px 4px 0 rgba(0, 0, 0, 0.489);
 }
 
-.quiz-answer:hover{
+.quiz-answer:hover,
+.quiz-answer:focus{
     filter: brightness(1.2);
+    cursor: pointer;
+    outline: none;
+}
+
+.quiz-answer.locked-in{
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.627), transparent);
+    animation: 1s locked infinite linear;
+    background-size: 600px 600px;
+}
+
+.quiz-answer.correct{
+    background: green;
+}
+
+.quiz-answer.wrong{
+    background-color: red;
+}
+
+@keyframes locked {
+    0%{
+        background-position-x: 0%;
+    }
+    100%{
+        background-position-x: 300%;
+    }
 }
 
 .fan-list{

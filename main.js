@@ -106,15 +106,20 @@ const game = (function() {
     //const maxAnswerDisplayTime = 20; TODO
     let currentPhase = 0;
     let currentQuiz;
+    const playerHues = [220, 120, 60, 280];
     let players = [];
     let buzzedPlayer = null;
     let awaitingBuzzer = false;
     let correctAnswerIndex = 0;
 
     const onPlayersChanged = new CustomEvent("onplayerschanged");
+    const onQuestionChanged = new CustomEvent("onquestionchanged");
+    const onAnswersAvailable = new CustomEvent("onanswersavailable");
 
     const getPlayers = () => players;
+    const getBuzzedPlayer = () => buzzedPlayer;
     const isInLobby = () => currentPhase == 0;
+    const getQuiz = () => currentQuiz;
 
     function resetGame(){
         currentPhase = 0;
@@ -136,7 +141,8 @@ const game = (function() {
             return false;
         }
 
-        const player = createPlayer(name);
+        const player = createPlayer(name, playerHues[(players.length ?? 0) % playerHues.length]);
+        console.log(player.hue);
         players.push(player);
         document.dispatchEvent(onPlayersChanged);
         console.log(`New player was added: ${name}`);
@@ -181,6 +187,8 @@ const game = (function() {
 
         console.log(currentQuestion.question);
         buzzedPlayer = null;
+        console.log("buzzed player set to null")
+        document.dispatchEvent(onQuestionChanged);
         setTimeout(() => {
             let possibleAnswers = [currentQuestion.correctAnswer, ...currentQuestion.wrongAnswers];
             possibleAnswers.sort(() => Math.random() * 2 - 1);
@@ -188,6 +196,7 @@ const game = (function() {
             displayAnswers.forEach(x => console.log(x))
             correctAnswerIndex = possibleAnswers.indexOf(currentQuestion.correctAnswer);
             awaitingBuzzer = true;
+            document.dispatchEvent(onAnswersAvailable);
         }, questionDisplayTime * 1000);
     }
 
@@ -203,16 +212,28 @@ const game = (function() {
         }
     }*/
 
+    function getPlayerByName(name){
+        return players.find(x => x.name == name);
+    }
+
     function invokeBuzzer(player){
         if(currentPhase != 1){
             console.log("Game not yet started!");
             return;
         }
+        if(player == null){
+            console.error("Cannot invoke buzzer of NULL player!");
+            return;
+        }
         if(buzzedPlayer == null && awaitingBuzzer){
             buzzedPlayer = player;
+            const onPlayerTurn = new CustomEvent("onplayerturn", {"detail": {player}});
+            console.log(player.name, "Buzzed!")
+            document.dispatchEvent(onPlayerTurn);
             awaitingBuzzer = false;
+            console.log(buzzedPlayer.name);
             
-            const answer = prompt(`${buzzedPlayer.name} buzzed! Select a number 1-4`);
+            /*const answer = prompt(`${buzzedPlayer.name} buzzed! Select a number 1-4`);
             if(correctAnswerIndex == (answer-1)){
                 buzzedPlayer.incrementScore();
                 console.log(`${buzzedPlayer.name} answered CORRECTLY!`,
@@ -224,12 +245,26 @@ const game = (function() {
                     `Their score is now ${buzzedPlayer.getScore()}`);
             }
 
-            gotoNextQuestion();
+            gotoNextQuestion();*/
         }
     }
 
+    function provideAnswer(player, answer){
+        let wasCorrect = false;
+        if(player == buzzedPlayer){
+            console.log(currentQuiz.getCurrentQuestion().correctAnswer, "got:", answer)
+            if(currentQuiz.getCurrentQuestion().correctAnswer == answer){
+                wasCorrect = true;
+            }
+        }
+
+        setTimeout(gotoNextQuestion, 3000);
+
+        return wasCorrect;
+    }
+
     return {addNewPlayer, initializeNewQuiz, startGame, resetGame, gotoNextQuestion, displayCurrentQuestion,
-        invokeBuzzer, getPlayers, isInLobby
+        invokeBuzzer, getPlayerByName, getPlayers, isInLobby, getQuiz, questionDisplayTime, getBuzzedPlayer, provideAnswer
     };
 }())
 
@@ -253,7 +288,7 @@ function createQuiz(questionCount){
     return {questions: quizQuestions, getCurrentQuestion, incrementQuestionIndex};
 }
 
-function createPlayer(name){
+function createPlayer(name, hue){
     let score = 0;
     const getScore = () => score;
     const setScore = (val) => score = val;
@@ -264,7 +299,7 @@ function createPlayer(name){
         game.invokeBuzzer(this);
     }
 
-    return {name, getScore, setScore, incrementScore, decrementScore, pressBuzzer};
+    return {name, hue, getScore, setScore, incrementScore, decrementScore, pressBuzzer};
 }
 
 const displayController = (function(){
@@ -341,21 +376,134 @@ const displayController = (function(){
     }
 
     function playerBuzzerClick(e){
+        e.preventDefault();
         buzzerAudio.play();
+        const buzzer = e.target.closest(".player-buzzer-container");
+        const playerName = buzzer.dataset.playerName;
+        const player = game.getPlayerByName(playerName);
+        if(player){
+            if(game.getBuzzedPlayer() == player){
+                setAnswerFocus(currentFocusIndex + 1);
+            }
+            else{
+                game.invokeBuzzer(player);
+            }
+        }
     }
 
-    return {evaluateKeyDown, evaluateKeyUp};
+    const quizContainer = document.querySelector(".quiz-container");
+    const quizQuestion = quizContainer.querySelector(".quiz-question");
+    const quizCountdown = quizContainer.querySelector(".quiz-countdown");
+    const quizAnswerContainer = quizContainer.querySelector(".quiz-answer-container");
+    let currentFocusIndex = 0;
+
+    
+    document.addEventListener("onquestionchanged", displayCurrentQuestion);
+    document.addEventListener("onanswersavailable", displayCurrentAnswers);
+    document.addEventListener("onplayerturn", displayPlayerTurn);
+
+    function startGame(){
+        game.startGame();
+    } 
+
+    function displayCurrentQuestion(){
+        const currentQuestion = game.getQuiz().getCurrentQuestion();
+        quizQuestion.textContent = currentQuestion.question;
+        quizContainer.style.display = "flex";
+        quizCountdown.style.display = "block";
+        quizContainer.style.setProperty("--saturation", "0%");
+        quizAnswerContainer.style.display = "none";
+        let timeoutLength = game.questionDisplayTime;
+        quizCountdown.textContent = timeoutLength;
+
+        const inter = setInterval(() => {
+            timeoutLength--;
+            quizCountdown.textContent = timeoutLength;
+            if(timeoutLength <= 0){
+                quizCountdown.style.display = "none";
+                clearInterval(inter);
+            }
+        }, 1000);
+    }
+
+    function displayCurrentAnswers(){
+        quizAnswerContainer.innerHTML = "";
+        const currentQuestion = game.getQuiz().getCurrentQuestion();
+        let possibleAnswers = [currentQuestion.correctAnswer, ...currentQuestion.wrongAnswers];
+        possibleAnswers.sort(() => Math.random() * 2 - 1);
+        //correctAnswerIndex = possibleAnswers.indexOf(currentQuestion.correctAnswer);
+        possibleAnswers.forEach(x => createAnswerItem(x));
+        quizCountdown.style.display = "none";
+        quizAnswerContainer.style.display = "grid";
+    }
+
+    function createAnswerItem(answerString){
+        const newAnswer = document.createElement("button");
+        newAnswer.classList.add("quiz-answer");
+        newAnswer.textContent = answerString;
+        quizAnswerContainer.appendChild(newAnswer);
+    }
+
+    function displayPlayerTurn(e){
+        quizContainer.style.setProperty("--hue", e.detail.player.hue + "deg");
+        quizContainer.style.setProperty("--saturation", "50%");
+        currentFocusIndex = 0;
+        setAnswerFocus(0);
+        startAnswerTimer();
+    }
+
+    function setAnswerFocus(focusIndex){
+        currentFocusIndex = focusIndex % quizAnswerContainer.childNodes.length;
+        const answerElement = quizAnswerContainer.childNodes[currentFocusIndex];
+        if(answerElement){
+            answerElement.focus();
+        }
+    }
+
+    function startAnswerTimer(){
+        let timeoutLength = game.questionDisplayTime;
+        quizCountdown.style.display = "block";
+        quizCountdown.textContent = timeoutLength;
+
+        const inter = setInterval(() => {
+            timeoutLength--;
+            quizCountdown.textContent = timeoutLength;
+            if(timeoutLength <= 0){
+                quizCountdown.style.display = "none";
+                lockInAnswer();
+                clearInterval(inter);
+            }
+        }, 1000);
+    }
+
+    function lockInAnswer(){
+        const answerElement = quizAnswerContainer.childNodes[currentFocusIndex];
+        if(answerElement){
+            //answerElement.classList.add("locked-in");
+            const correctAnswer = game.provideAnswer(game.getBuzzedPlayer(), answerElement.textContent);
+            if(correctAnswer){
+                answerElement.classList.add("correct");
+            }else{
+                answerElement.classList.add("wrong");
+            }
+        }
+    }
+
+    return {evaluateKeyDown, evaluateKeyUp, startGame};
 }());
 
 document.addEventListener("keydown", e => {
+    if(e.key.length != 1) return;
+
     e.preventDefault();
-    displayController.evaluateKeyDown(e.key);
-    console.log("keydown")
+    displayController.evaluateKeyDown(e.key.toUpperCase());
 });
 
 document.addEventListener("keyup", e => {
+    if(e.key.length != 1) return;
+
     e.preventDefault();
-    displayController.evaluateKeyUp(e.key);
+    displayController.evaluateKeyUp(e.key.toUpperCase());
 });
 
 const resetGameButton = document.querySelector(".reset-game");
@@ -365,5 +513,5 @@ resetGameButton.addEventListener("click", e => {
 
 const startGameButton = document.querySelector(".start-game");
 startGameButton.addEventListener("click", e => {
-    game.startGame();
+    displayController.startGame();
 });
