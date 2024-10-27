@@ -261,10 +261,8 @@ const game = (function() {
         if(buzzedPlayer == null && awaitingBuzzer){
             buzzedPlayer = player;
             const onPlayerTurn = new CustomEvent("onplayerturn", {"detail": {player}});
-            console.log(player.name, "Buzzed!")
             buzzer.dispatchEvent(onPlayerTurn);
             awaitingBuzzer = false;
-            console.log(buzzedPlayer.name);
             
             /*const answer = prompt(`${buzzedPlayer.name} buzzed! Select a number 1-4`);
             if(correctAnswerIndex == (answer-1)){
@@ -288,11 +286,14 @@ const game = (function() {
             console.log(currentQuiz.getCurrentQuestion().correctAnswer, "got:", answer)
             if(currentQuiz.getCurrentQuestion().correctAnswer == answer){
                 wasCorrect = true;
+                player.incrementScore();
             }
         }
 
         time.createTimeout(gotoNextQuestion, 3000);
 
+        if(!wasCorrect)
+            player.decrementScore();
         return wasCorrect;
     }
 
@@ -386,14 +387,19 @@ const displayController = (function(){
         fanList.appendChild(newFanElement);
     }
 
+    function getPlayerBuzzerElement(playerName){
+        return playerBuzzerElements.find(x => x.dataset.playerName == playerName);
+    }
+
     function evaluateKeyDown(key){
+        console.log("buzzer " + key);
         if(game.isInLobby()){
             if(game.addNewPlayer(key)){
                 return;     //stop only if player was added
             }
         }
 
-        const buzzer = playerBuzzerElements.find(x => x.dataset.playerName == key);
+        const buzzer = getPlayerBuzzerElement(key);
         if(buzzer && !buzzersClicked.includes(buzzer)){
             buzzer.classList.add("active");
             buzzer.click();
@@ -536,7 +542,23 @@ const displayController = (function(){
             }else{
                 answerElement.classList.add("wrong");
             }
+            displayPlayerScore(game.getBuzzedPlayer());
         }
+    }
+
+    function displayPlayerScore(player){
+        const buzzer = getPlayerBuzzerElement(player.name);
+
+        if(buzzer){
+            const scoreElement = buzzer.querySelector(".player-score");
+            if(scoreElement){
+                scoreElement.textContent = player.getScore();
+            }
+        }
+    }
+
+    function refreshPlayerScores(){
+        game.getPlayers().forEach(x => displayPlayerScore(x));
     }
 
     function displayQuizWinner(){
@@ -554,12 +576,14 @@ const displayController = (function(){
     function handleGamePhaseChange(){
         switch(game.getPhase()){
             case 0:
-                hideQuiz();
+                hideQuiz();;
                 break;
             case 1:
+                refreshPlayerScores()
                 break;
             case 2:
                 displayQuizWinner();
+                clearBuzzers();
                 break;
         }
     }
