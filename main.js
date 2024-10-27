@@ -111,10 +111,15 @@ const game = (function() {
     let awaitingBuzzer = false;
     let correctAnswerIndex = 0;
 
+    const onPlayersChanged = new CustomEvent("onplayerschanged");
+
+    const getPlayers = () => players;
+    const isInLobby = () => currentPhase == 0;
+
     function resetGame(){
         currentPhase = 0;
         players = [];
-        console.log("Game was reset!");
+        document.dispatchEvent(onPlayersChanged);
     }
 
     function resetPlayerScores(){
@@ -124,12 +129,18 @@ const game = (function() {
     function addNewPlayer(name){
         if(players.length >= maxPlayers){
             console.log("Max players reached!");
-            return;
+            return false;
+        }
+
+        if(players.findIndex(x => x.name == name) > -1){
+            return false;
         }
 
         const player = createPlayer(name);
         players.push(player);
+        document.dispatchEvent(onPlayersChanged);
         console.log(`New player was added: ${name}`);
+        return true;
     }
 
     function initializeNewQuiz(questionCount){
@@ -180,8 +191,9 @@ const game = (function() {
         }, questionDisplayTime * 1000);
     }
 
-    function evaluateKey(key){
-        const playerWithKey = players.find(x => x.name == key);
+    /*function evaluateKey(key){
+        
+        /*const playerWithKey = players.find(x => x.name == key);
 
         if(playerWithKey){
             playerWithKey.pressBuzzer();
@@ -189,7 +201,7 @@ const game = (function() {
         {
             addNewPlayer(key);
         }
-    }
+    }*/
 
     function invokeBuzzer(player){
         if(currentPhase != 1){
@@ -217,7 +229,7 @@ const game = (function() {
     }
 
     return {addNewPlayer, initializeNewQuiz, startGame, resetGame, gotoNextQuestion, displayCurrentQuestion,
-        evaluateKey, invokeBuzzer
+        invokeBuzzer, getPlayers, isInLobby
     };
 }())
 
@@ -255,9 +267,95 @@ function createPlayer(name){
     return {name, getScore, setScore, incrementScore, decrementScore, pressBuzzer};
 }
 
-document.addEventListener("keypress", e => {
+const displayController = (function(){
+    const mainContent = document.querySelector(".main-content");
+    const fanList = document.querySelector(".fan-list");
+    const playerContainer = document.querySelector(".player-container");
+    let playerBuzzerElements = [];
+    const buzzerAudio = new Audio("./audio/click.mp3");
+    const buzzersClicked = [];
+
+    document.addEventListener("onplayerschanged", () => refreshPlayerUI());
+
+    function refreshPlayerUI(){
+        playerContainer.innerHTML = "";
+        fanList.innerHTML = "";
+        playerBuzzerElements = [];
+        mainContent.style.setProperty("--player-count", game.getPlayers()? game.getPlayers().length : 0);
+        game.getPlayers()?.forEach(player => {
+            addPlayerBuzzer(player);
+            addPlayerFan();
+        });
+        console.log("reset ui", game.getPlayers().length);
+    }
+
+    function createBuzzerHTML(name){
+        name = name.toUpperCase();
+        return `<button class="player-buzzer">
+                    <p>${name}</p>
+                </button>
+                <div class="player-info">
+                    <div class="player-name">Player A</div>
+                    <div class="player-score">0</div>
+                </div>`;
+    }
+
+    function addPlayerBuzzer(player){
+        const newPlayerElement = document.createElement("div");
+        newPlayerElement.classList.add("player-buzzer-container");
+        newPlayerElement.innerHTML = createBuzzerHTML(player.name);
+        newPlayerElement.dataset.playerIndex = playerBuzzerElements.length;
+        newPlayerElement.dataset.playerName = player.name;
+        playerContainer.appendChild(newPlayerElement);
+        playerBuzzerElements.push(newPlayerElement);
+        newPlayerElement.addEventListener("click", playerBuzzerClick);
+    }
+
+    function addPlayerFan(){
+        const newFanElement = document.createElement("div");
+        newFanElement.classList.add("fan-item");
+        fanList.appendChild(newFanElement);
+    }
+
+    function evaluateKeyDown(key){
+        if(game.isInLobby()){
+            if(game.addNewPlayer(key)){
+                return;     //stop only if player was added
+            }
+        }
+
+        const buzzer = playerBuzzerElements.find(x => x.dataset.playerName == key);
+        if(buzzer && !buzzersClicked.includes(buzzer)){
+            buzzer.classList.add("active");
+            buzzer.click();
+            buzzersClicked.push(buzzer);
+        }
+    }
+
+    function evaluateKeyUp(key){
+        const buzzer = playerBuzzerElements.find(x => x.dataset.playerName == key);
+        if(buzzer){
+            buzzer.classList.remove("active");
+            buzzersClicked.pop(buzzer);
+        }
+    }
+
+    function playerBuzzerClick(e){
+        buzzerAudio.play();
+    }
+
+    return {evaluateKeyDown, evaluateKeyUp};
+}());
+
+document.addEventListener("keydown", e => {
     e.preventDefault();
-    game.evaluateKey(e.key);
+    displayController.evaluateKeyDown(e.key);
+    console.log("keydown")
+});
+
+document.addEventListener("keyup", e => {
+    e.preventDefault();
+    displayController.evaluateKeyUp(e.key);
 });
 
 const resetGameButton = document.querySelector(".reset-game");

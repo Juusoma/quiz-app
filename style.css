@@ -4,6 +4,7 @@ body{
     margin: 0;
     padding: 0;
     background-color: rgb(210, 210, 210);
+    user-select: none;
     
     box-sizing: border-box;
 
@@ -36,7 +37,7 @@ button:hover{
 }
 
 .main-content{
-    --player-count: 4;
+    --player-count: 2;
 }
 
 .game-actions{
@@ -119,6 +120,9 @@ button:hover{
     height: 100vh;
     overflow: hidden;
     background-color: rgb(130, 130, 130);
+    --shadow-color: rgba(0, 0, 0, 0.536);
+    box-shadow: inset 0 0 20px 10px var(--shadow-color),
+                0 0 20px 10px var(--shadow-color);
 }
 
 .fan-item{
@@ -131,7 +135,6 @@ button:hover{
     transition: rotate 1s;
     --start-angle: calc(180 / (var(--player-count)));
     --fan-angle: calc((-90 + (var(--index) / (var(--player-count)) * 180) + 0) * 1deg);
-    --shadow-color: rgba(0, 0, 0, 0.536);
     box-shadow: inset 0 0 20px 0 var(--shadow-color),
                 0 0 20px 0 var(--shadow-color);
     --fan-saturation: 50%;
@@ -146,6 +149,10 @@ button:hover{
 .fan-item:nth-child(1){
     --player-hue: 220deg;
     --index: 0;
+}
+
+.fan-item:nth-child(1):only-child{
+    left: -100%;
 }
 
 .fan-item:nth-child(2){
@@ -228,7 +235,8 @@ button:hover{
     --lightness: 40%;
 }
 
-.player-buzzer:active{
+.player-buzzer:active,
+.player-buzzer-container.active > .player-buzzer{
     --step: 1px;
     --shadow-color: rgb(255, 0, 0);
     --shadow-length: 40px;
@@ -250,7 +258,8 @@ button:hover{
     text-align: center;
 }
 
-.player-buzzer:active + .player-info > .player-name{
+.player-buzzer:active + .player-info > .player-name,
+.player-buzzer-container.active > .player-info > .player-name{
     color: rgb(255, 0, 0);
     text-shadow: 0 0 16px rgb(255, 0, 0);
 }
