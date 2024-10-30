@@ -85,7 +85,6 @@ const game = (function() {
         }
 
         const player = createPlayer(name, playerHues[(players.length ?? 0) % playerHues.length]);
-        console.log(player.hue);
         players.push(player);
         document.dispatchEvent(onPlayersChanged);
         console.log(`New player was added: ${name}`);
@@ -131,18 +130,16 @@ const game = (function() {
     function displayCurrentQuestion(){
         const currentQuestion = currentQuiz.getCurrentQuestion();
 
-        console.log(currentQuestion.question);
         buzzedPlayer = null;
-        console.log("buzzed player set to null")
         document.dispatchEvent(onQuestionChanged);
         time.createTimeout(() => {
-            let possibleAnswers = [currentQuestion.correctAnswer, ...currentQuestion.wrongAnswers];
+            /*let possibleAnswers = [currentQuestion.correctAnswer, ...currentQuestion.wrongAnswers];
             possibleAnswers.sort(() => Math.random() * 2 - 1);
             const displayAnswers = possibleAnswers.map((x, i) => ((i+1)+ ". " + x));
             displayAnswers.forEach(x => console.log(x))
-            correctAnswerIndex = possibleAnswers.indexOf(currentQuestion.correctAnswer);
-            awaitingBuzzer = true;
+            correctAnswerIndex = possibleAnswers.indexOf(currentQuestion.correctAnswer);*/
             document.dispatchEvent(onAnswersAvailable);
+            awaitingBuzzer = true;
         }, questionDisplayTime * 1000);
     }
 
@@ -184,7 +181,6 @@ const game = (function() {
     function provideAnswer(player, answer){
         let wasCorrect = false;
         if(player == buzzedPlayer){
-            console.log(currentQuiz.getCurrentQuestion().correctAnswer, "got:", answer)
             if(currentQuiz.getCurrentQuestion().correctAnswer == answer){
                 wasCorrect = true;
                 player.incrementScore();
@@ -259,7 +255,6 @@ const displayController = (function(){
             addPlayerBuzzer(player);
             addPlayerFan();
         });
-        console.log("reset ui", game.getPlayers().length);
     }
 
     function createBuzzerHTML(name){
@@ -374,7 +369,6 @@ const displayController = (function(){
             timeoutLength--;
             quizCountdown.textContent = timeoutLength;
             if(timeoutLength <= 0){
-                quizCountdown.style.display = "none";
                 clearInterval(inter);
             }
         }, 1000);
