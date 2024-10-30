@@ -267,7 +267,7 @@ const displayController = (function(){
                     <p>${name}</p>
                 </button>
                 <div class="player-info">
-                    <div class="player-name">Player A</div>
+                    <div class="player-name">Player ${name}</div>
                     <div class="player-score">0</div>
                 </div>`;
     }

@@ -47,14 +47,22 @@ button:hover{
     place-content: center;
     width: 100%;
     height: 100%;
+    text-align: center;
 
     color: rgba(0, 0, 0, 0.3);
     text-shadow: 1px -2px 0px rgba(33, 33, 33, 0.4);
     background-color: #ffffff;
     background-clip: text;
     -webkit-background-clip: text;
-    font-size: 3rem;
     font-weight: bold;
+}
+
+.main-title > p{
+    font-size: 1.4rem;
+}
+
+.main-title > h1{
+    font-size: 3rem;
 }
 
 .game-actions{
