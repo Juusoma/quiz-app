@@ -365,6 +365,8 @@ const displayController = (function(){
         let timeoutLength = game.questionDisplayTime;
         quizCountdown.textContent = timeoutLength;
 
+        //BUG: last iteration is sometimes called after startAnswerTimer
+        //when players spam buzzers before answers are showing
         const inter = time.createInterval(() => {
             timeoutLength--;
             quizCountdown.textContent = timeoutLength;

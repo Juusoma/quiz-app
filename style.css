@@ -71,6 +71,8 @@ button:hover{
 }
 
 .game-actions{
+    z-index: 1;
+    position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -95,6 +97,8 @@ button:hover{
 }
 
 .quiz-container{
+    z-index: 1;
+    position: relative;
     display: none;
     flex-direction: column;
     --hue: 0deg;
@@ -102,7 +106,7 @@ button:hover{
     --lightness: 50%;
     background: linear-gradient(0deg, hsl(var(--hue), var(--saturation), calc(var(--lightness) - 10%)), hsl(var(--hue), var(--saturation), var(--lightness)));
     color: white;
-    width: 25vw;
+    width: max(250px, 25vw);
     margin: auto;
     gap: 16px;
     top: 0;
@@ -236,10 +240,12 @@ button:hover{
 }
 
 .player-container{
+    overflow: hidden;
     position: absolute;
     top: 0;
-    left: 50%;
-    translate: -50% 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
 }
 
 .player-buzzer-container{
@@ -250,9 +256,9 @@ button:hover{
     align-items: center;
     --start-angle: calc(180 / (var(--player-count) * 2));
     --angle: calc(((var(--index) / (var(--player-count)) * 180) + var(--start-angle)) * 1deg);
-    --max-distance-hor: 25vw;
+    --max-distance-hor: 35vw;
     --max-distance-vert: 75vh;
-    left: calc(cos(var(--angle)) * var(--max-distance-hor));
+    left: calc(cos(var(--angle)) * var(--max-distance-hor) + 50%);
     top: calc(sin(var(--angle)) * var(--max-distance-vert));
 }
 
