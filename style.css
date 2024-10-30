@@ -190,12 +190,11 @@ button:hover{
     position: absolute;
     transform-origin: 100% 0%;
     top: 0;
-    left: -50%;
-    width: 100%;
-    height: 500%;
+    right: 50%;
+    width: max(1000px, 100vw);
+    height: max(1000px, 500vw);
     transition: rotate 1s;
-    --start-angle: calc(180 / (var(--player-count)));
-    --fan-angle: calc((-90 + (var(--index) / (var(--player-count)) * 180) + 0) * 1deg);
+    --fan-angle: calc((-90 + (var(--index) / (var(--player-count)) * 180)) * 1deg);
     box-shadow: inset 0 0 20px 0 var(--shadow-color),
                 0 0 20px 0 var(--shadow-color);
     --fan-saturation: 50%;
@@ -246,8 +245,10 @@ button:hover{
     align-items: center;
     --start-angle: calc(180 / (var(--player-count) * 2));
     --angle: calc(((var(--index) / (var(--player-count)) * 180) + var(--start-angle)) * 1deg);
-    top: calc(sin(var(--angle)) * 75vh);
-    left: calc(cos(var(--angle)) * 75vh);
+    --max-distance-hor: 25vw;
+    --max-distance-vert: 75vh;
+    left: calc(cos(var(--angle)) * var(--max-distance-hor));
+    top: calc(sin(var(--angle)) * var(--max-distance-vert));
 }
 
 .player-buzzer-container:nth-child(1){
