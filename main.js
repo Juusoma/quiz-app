@@ -241,7 +241,10 @@ const displayController = (function(){
     const fanList = document.querySelector(".fan-list");
     const playerContainer = document.querySelector(".player-container");
     let playerBuzzerElements = [];
-    const buzzerAudio = new Audio("./audio/click.mp3");
+    const buzzerClickAudio = new Audio("./audio/click.mp3");
+    const wrongAnswerAudio = new Audio("./audio/wrong_answer.mp3");
+    const correctAnswerAudio = new Audio("./audio/correct_answer.mp3");
+    const playerTurnAudio = new Audio("./audio/player_turn.mp3");
     const buzzersClicked = [];
 
     document.addEventListener("onplayerschanged", () => refreshPlayerUI());
@@ -292,7 +295,6 @@ const displayController = (function(){
     }
 
     function evaluateKeyDown(key){
-        console.log("buzzer " + key);
         if(game.isInLobby()){
             if(game.addNewPlayer(key)){
                 return;     //stop only if player was added
@@ -308,7 +310,7 @@ const displayController = (function(){
     }
 
     function evaluateKeyUp(key){
-        const buzzer = playerBuzzerElements.find(x => x.dataset.playerName == key);
+        const buzzer = getPlayerBuzzerElement(key);
         if(buzzer){
             buzzer.classList.remove("active");
             buzzersClicked.pop(buzzer);
@@ -317,11 +319,11 @@ const displayController = (function(){
 
     function playerBuzzerClick(e){
         e.preventDefault();
-        buzzerAudio.play();
         const buzzer = e.target.closest(".player-buzzer-container");
         const playerName = buzzer.dataset.playerName;
         const player = game.getPlayerByName(playerName);
         if(player){
+            buzzerClickAudio.play();
             if(game.getBuzzedPlayer() == player){
                 setAnswerFocus(currentFocusIndex + 1);
             }
@@ -404,6 +406,7 @@ const displayController = (function(){
         quizContainer.style.setProperty("--saturation", "50%");
         currentFocusIndex = 0;
         e.target.classList.add("turn");
+        playerTurnAudio.play();
         setAnswerFocus(0);
         startAnswerTimer();
     }
@@ -439,8 +442,10 @@ const displayController = (function(){
             const correctAnswer = game.provideAnswer(game.getBuzzedPlayer(), answerElement.textContent);
             if(correctAnswer){
                 answerElement.classList.add("correct");
+                correctAnswerAudio.play();
             }else{
                 answerElement.classList.add("wrong");
+                wrongAnswerAudio.play();
             }
             displayPlayerScore(game.getBuzzedPlayer());
         }
