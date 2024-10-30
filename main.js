@@ -389,16 +389,17 @@ const displayController = (function(){
         const currentQuestion = game.getQuiz().getCurrentQuestion();
         let possibleAnswers = [currentQuestion.correctAnswer, ...currentQuestion.wrongAnswers];
         possibleAnswers.sort(() => Math.random() * 2 - 1);
-        //correctAnswerIndex = possibleAnswers.indexOf(currentQuestion.correctAnswer);
-        possibleAnswers.forEach(x => createAnswerItem(x));
+        possibleAnswers.forEach(x => createAnswerItem(x, x == currentQuestion.correctAnswer));
         quizCountdown.style.display = "none";
         quizAnswerContainer.style.display = "grid";
     }
 
-    function createAnswerItem(answerString){
+    function createAnswerItem(answerString, isCorrect){
         const newAnswer = document.createElement("button");
         newAnswer.classList.add("quiz-answer");
         newAnswer.textContent = answerString;
+        if(isCorrect)
+            newAnswer.dataset.isCorrect = true;
         quizAnswerContainer.appendChild(newAnswer);
     }
 
@@ -447,8 +448,17 @@ const displayController = (function(){
             }else{
                 answerElement.classList.add("wrong");
                 wrongAnswerAudio.play();
+                highlightCorrectAnswer(quizAnswerContainer.childNodes);
             }
             displayPlayerScore(game.getBuzzedPlayer());
+        }
+    }
+
+    function highlightCorrectAnswer(answerElements){
+        const answersAsArray = Array.from(answerElements);
+        const correctAnswer = answersAsArray.find(x => "isCorrect" in x.dataset);
+        if(correctAnswer){
+            correctAnswer.classList.add("correct");
         }
     }
 
