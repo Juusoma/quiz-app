@@ -29,6 +29,7 @@ const time = (function(){
 const game = (function() {
     const maxPlayers = 4;
     const questionDisplayTime = 5;
+    const defaultQuestionCount = 10;
     //const maxAnswerDisplayTime = 20; TODO
     let currentPhase = 0;
     let currentQuiz;
@@ -107,7 +108,7 @@ const game = (function() {
         }
 
         resetPlayerScores();
-        initializeNewQuiz(3);
+        initializeNewQuiz(defaultQuestionCount);
         setPhase(1);
         displayCurrentQuestion();
     }
