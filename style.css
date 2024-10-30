@@ -49,12 +49,13 @@ button:hover{
     height: 100%;
     text-align: center;
 
-    color: rgba(0, 0, 0, 0.3);
-    text-shadow: 1px -2px 0px rgba(33, 33, 33, 0.4);
-    background-color: #ffffff;
-    background-clip: text;
-    -webkit-background-clip: text;
+    color: rgb(112, 112, 112);
     font-weight: bold;
+}
+
+.main-title > *{
+    text-shadow: .04ch -.08ch 0px rgba(0, 0, 0, 0.388),
+                 -.04ch .08ch 0px rgba(255, 255, 255, 0.233);
 }
 
 .main-title > p{
@@ -63,6 +64,10 @@ button:hover{
 
 .main-title > h1{
     font-size: 3rem;
+}
+
+.main-title > p:last-child{
+    margin-top: 50%;
 }
 
 .game-actions{
