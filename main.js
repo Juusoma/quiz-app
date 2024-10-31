@@ -74,13 +74,35 @@ const game = (function() {
         players.forEach(x => x.setScore(0));
     }
 
+    function getRandomAvailableName(){
+        const alphabet = "ABCDEFGHIJKLMNOPGRSTUVWXYZ";
+        const alphaArray = alphabet.split("").sort(() => Math.random()*2-1).join("");
+        for(let c of alphaArray){
+            if(isNameAvailable(c))
+                return c;
+        }
+    }
+
+    function isNameAvailable(name){
+        if(name == undefined || name == "")
+            return false;
+        if(players.findIndex(x => x.name == name) > -1){
+            return false;
+        }
+        return true;
+    }
+
     function addNewPlayer(name){
         if(players.length >= maxPlayers){
             console.log("Max players reached!");
             return false;
         }
 
-        if(players.findIndex(x => x.name == name) > -1){
+        if(name == undefined || name == ""){
+            name = getRandomAvailableName();
+        }
+
+        if(!isNameAvailable(name)){
             return false;
         }
 
@@ -133,11 +155,6 @@ const game = (function() {
         buzzedPlayer = null;
         document.dispatchEvent(onQuestionChanged);
         time.createTimeout(() => {
-            /*let possibleAnswers = [currentQuestion.correctAnswer, ...currentQuestion.wrongAnswers];
-            possibleAnswers.sort(() => Math.random() * 2 - 1);
-            const displayAnswers = possibleAnswers.map((x, i) => ((i+1)+ ". " + x));
-            displayAnswers.forEach(x => console.log(x))
-            correctAnswerIndex = possibleAnswers.indexOf(currentQuestion.correctAnswer);*/
             document.dispatchEvent(onAnswersAvailable);
             awaitingBuzzer = true;
         }, questionDisplayTime * 1000);
@@ -161,20 +178,6 @@ const game = (function() {
             const onPlayerTurn = new CustomEvent("onplayerturn", {"detail": {player}});
             buzzer.dispatchEvent(onPlayerTurn);
             awaitingBuzzer = false;
-            
-            /*const answer = prompt(`${buzzedPlayer.name} buzzed! Select a number 1-4`);
-            if(correctAnswerIndex == (answer-1)){
-                buzzedPlayer.incrementScore();
-                console.log(`${buzzedPlayer.name} answered CORRECTLY!`,
-                    `Their score is now ${buzzedPlayer.getScore()}`);
-            }
-            else{
-                buzzedPlayer.decrementScore();
-                console.log(`${buzzedPlayer.name} answered WRONG!`,
-                    `Their score is now ${buzzedPlayer.getScore()}`);
-            }
-
-            gotoNextQuestion();*/
         }
     }
 
@@ -310,6 +313,17 @@ const displayController = (function(){
         if(buzzer){
             buzzer.classList.remove("active");
             buzzersClicked.pop(buzzer);
+        }
+    }
+
+    function evaluateContextMenu(e){
+        const buzzer = e.target.closest?e.target.closest(".player-buzzer-container"):undefined;
+        if(buzzer){
+            return;
+        }
+
+        if(game.isInLobby()){
+           game.addNewPlayer()
         }
     }
 
@@ -500,7 +514,7 @@ const displayController = (function(){
         }
     }
 
-    return {evaluateKeyDown, evaluateKeyUp, startGame, resetGame};
+    return {evaluateKeyDown, evaluateKeyUp, evaluateContextMenu, startGame, resetGame};
 }());
 
 document.addEventListener("keydown", e => {
@@ -515,6 +529,35 @@ document.addEventListener("keyup", e => {
 
     e.preventDefault();
     displayController.evaluateKeyUp(e.key.toUpperCase());
+});
+
+const contextMenuFireTime = 500;
+let contextMenuTimer = null;
+
+document.addEventListener("touchstart", e => {
+    contextMenuTimer = time.createTimeout(() => {
+        const contextMenuEvent = new MouseEvent("contextmenu", {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+            clientX: e.touches[0].clientX,
+            clientY: e.touches[0].clientY
+        });
+        document.dispatchEvent(contextMenuEvent);
+    }, contextMenuFireTime);
+}); 
+
+document.addEventListener("touchend", e => {
+    clearTimeout(contextMenuTimer);
+});
+
+document.addEventListener("touchmove", e => {
+    clearTimeout(contextMenuTimer);
+});
+
+document.addEventListener("contextmenu", e => {
+    e.preventDefault();
+    displayController.evaluateContextMenu(e);
 });
 
 const resetGameButton = document.querySelector(".reset-game");
