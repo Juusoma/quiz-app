@@ -74,6 +74,10 @@ button:hover{
     .main-title > p:last-child > span:first-child{
         display: none;
     }
+    
+    .main-title > p:last-child > span:last-child{
+        color: rgb(184, 24, 24);
+    }
 }
 
 @media (pointer:fine){

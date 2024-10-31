@@ -531,30 +531,6 @@ document.addEventListener("keyup", e => {
     displayController.evaluateKeyUp(e.key.toUpperCase());
 });
 
-const contextMenuFireTime = 500;
-let contextMenuTimer = null;
-
-document.addEventListener("touchstart", e => {
-    contextMenuTimer = time.createTimeout(() => {
-        const contextMenuEvent = new MouseEvent("contextmenu", {
-            bubbles: true,
-            cancelable: true,
-            view: window,
-            clientX: e.touches[0].clientX,
-            clientY: e.touches[0].clientY
-        });
-        document.dispatchEvent(contextMenuEvent);
-    }, contextMenuFireTime);
-}); 
-
-document.addEventListener("touchend", e => {
-    clearTimeout(contextMenuTimer);
-});
-
-document.addEventListener("touchmove", e => {
-    clearTimeout(contextMenuTimer);
-});
-
 document.addEventListener("contextmenu", e => {
     e.preventDefault();
     displayController.evaluateContextMenu(e);
