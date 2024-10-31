@@ -38,9 +38,7 @@ const game = (function() {
     let buzzedPlayer = null;
     let winnerPlayer = null;
     let awaitingBuzzer = false;
-    let correctAnswerIndex = 0;
 
-    const onPlayersChanged = new CustomEvent("onplayerschanged");
     const onQuestionChanged = new CustomEvent("onquestionchanged");
     const onAnswersAvailable = new CustomEvent("onanswersavailable");
     const onPhaseChanged = new CustomEvent("onphasechanged");
@@ -59,6 +57,7 @@ const game = (function() {
 
     function resetPlayers(){
         players = [];
+        const onPlayersChanged = new CustomEvent("onplayerschanged");
         document.dispatchEvent(onPlayersChanged);
     }
 
@@ -108,6 +107,7 @@ const game = (function() {
 
         const player = createPlayer(name, playerHues[(players.length ?? 0) % playerHues.length]);
         players.push(player);
+        const onPlayersChanged = new CustomEvent("onplayerschanged", {detail: {newPlayer: player}});
         document.dispatchEvent(onPlayersChanged);
         console.log(`New player was added: ${name}`);
         return true;
@@ -245,19 +245,27 @@ const displayController = (function(){
     const wrongAnswerAudio = new Audio("./audio/wrong_answer.mp3");
     const correctAnswerAudio = new Audio("./audio/correct_answer.mp3");
     const playerTurnAudio = new Audio("./audio/player_turn.mp3");
+    const addPlayerAudio = new Audio("./audio/add_player.mp3");
     const buzzersClicked = [];
 
-    document.addEventListener("onplayerschanged", () => refreshPlayerUI());
+    document.addEventListener("onplayerschanged", (e) => refreshPlayerUI(e.detail?.newPlayer));
 
-    function refreshPlayerUI(){
-        playerContainer.innerHTML = "";
-        fanList.innerHTML = "";
-        playerBuzzerElements = [];
+    function refreshPlayerUI(newPlayer){
         mainContent.style.setProperty("--player-count", game.getPlayers()? game.getPlayers().length : 0);
-        game.getPlayers()?.forEach(player => {
+        if(newPlayer == undefined){
+            playerContainer.innerHTML = "";
+            fanList.innerHTML = "";
+            playerBuzzerElements = [];
+        }
+        else{
+            addPlayerBuzzer(newPlayer);
+            addPlayerFan();
+            addPlayerAudio.play();
+        }
+        /*game.getPlayers()?.forEach(player => {
             addPlayerBuzzer(player);
             addPlayerFan();
-        });
+        });*/
     }
 
     function createBuzzerHTML(name){
